@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# DeployMe pre-commit hook — scans staged changes for secrets using gitleaks.
+# Blocks the commit if any secret pattern is detected.
+#
+# To bypass intentionally (NOT recommended): git commit --no-verify
+
+set -e
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    cat >&2 <<'EOF'
+❌ gitleaks is not installed but the pre-commit hook requires it.
+   Install with: brew install gitleaks
+   (or see https://github.com/gitleaks/gitleaks#installing)
+
+   To bypass this check just once: git commit --no-verify
+EOF
+    exit 1
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CONFIG="$REPO_ROOT/.gitleaks.toml"
+
+echo "🔒 gitleaks: scanning staged changes for secrets..."
+
+# `gitleaks protect --staged` scans the staging area (not the working tree).
+# Works on gitleaks 8.x. Newer versions also support `gitleaks git --staged
+# --pre-commit` — that command supersedes `protect` but `protect` still works.
+if ! gitleaks protect --staged --redact --verbose --config "$CONFIG"; then
+    cat >&2 <<'EOF'
+
+❌ Commit blocked: gitleaks detected potential secrets in your staged changes.
+
+   Review the findings above. If a finding is a TRUE leak:
+     1. Unstage the file:  git restore --staged <file>
+     2. Remove the secret from the file
+     3. Re-stage and commit
+
+   If a finding is a FALSE positive (e.g., a test fixture):
+     Add an allowlist entry in .gitleaks.toml under [[allowlists]].
+
+   To bypass this hook intentionally (NOT recommended for real secrets):
+     git commit --no-verify
+EOF
+    exit 1
+fi
+
+echo "✅ No secrets detected."

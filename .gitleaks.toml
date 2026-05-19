@@ -1,0 +1,23 @@
+# DeployMe — gitleaks configuration
+# Extends the default gitleaks ruleset (which covers AWS keys, GCP keys,
+# generic API tokens, JWTs including Supabase service-role keys, OpenAI/
+# Anthropic-style keys, etc.) and adds an allowlist for files that are
+# expected to contain placeholder strings.
+#
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Allow placeholder values in .env.example"
+paths = [
+    '''\.env\.example$''',
+]
+
+[[allowlists]]
+description = "Allow obvious placeholder strings anywhere"
+regexes = [
+    '''your-(key|admin-key|anon-key|service-role-key)-here''',
+    '''your-project\.supabase\.co''',
+]
