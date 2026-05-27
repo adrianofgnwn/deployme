@@ -1,0 +1,35 @@
+# DeployMe backend dependencies — pinned to exact versions.
+# Update deliberately, never with unpinned ranges.
+
+# ─── Web framework ───────────────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# ─── Config & validation ─────────────────────────────────────────────────────
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
+
+# ─── Rate limiting ───────────────────────────────────────────────────────────
+slowapi==0.1.9
+
+# ─── HTTP client (Supabase auth verification, etc.) ──────────────────────────
+httpx==0.28.1
+
+# ─── Supabase (server-side admin client; uses the service role key) ──────────
+supabase==2.11.0
+
+# ─── LLM (added for Phase 1+, listed here so the image is complete) ──────────
+anthropic==0.43.0
+
+# ─── RAG pipeline (Phase 1+) ─────────────────────────────────────────────────
+langchain==0.3.14
+langchain-community==0.3.14
+langchain-anthropic==0.3.3
+langchain-chroma==0.1.4
+chromadb==0.5.23
+sentence-transformers==3.3.1
+
+# ─── PDF parsing (Phase 3) ───────────────────────────────────────────────────
+PyMuPDF==1.25.1

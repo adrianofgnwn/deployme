@@ -1,0 +1,37 @@
+# DeployMe — local development stack.
+#
+# Secrets are read exclusively from the .env file (gitignored). This file
+# contains NO inline secrets. Supabase is hosted externally, so only the
+# backend, frontend, and a persistent ChromaDB volume run here.
+
+services:
+  backend:
+    build: ./backend
+    env_file: .env
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app          # live-reload source in development
+      - chroma_data:/app/chroma_data
+    # --reload for dev convenience; production images use the Dockerfile CMD.
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build: ./frontend
+    env_file: .env
+    environment:
+      # Only VITE_-prefixed vars reach the browser bundle. The service role key
+      # is intentionally absent here and must never be added.
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules        # keep container-installed deps
+      - ./.env:/.env:ro          # Vite reads VITE_ vars from the repo-root .env
+    depends_on:
+      - backend
+
+volumes:
+  chroma_data:

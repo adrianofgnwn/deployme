@@ -154,13 +154,37 @@ These rules apply to every piece of code written in this project. No exceptions.
 
 ## Build Order
 Always build in this order. Do not skip phases:
-1. **Phase 0**: Project scaffolding, .gitignore, .env setup, security foundation (config, sanitizer, rate limiter, CORS, middleware, Dockerfiles), Supabase project setup, migration, auth context
-2. **Phase 1**: Backend ingestion + RAG query + basic chat UI (get the core loop working first)
+1. **Phase 0** ✅ DONE: Project scaffolding, .gitignore, .env setup, security foundation (config, sanitizer, rate limiter, CORS, middleware, Dockerfiles), Supabase project setup, migration, auth context
+2. **Phase 1** ⬅ NEXT: Backend ingestion + RAG query + basic chat UI (get the core loop working first)
 3. **Phase 2**: Skill extraction + analytics dashboard
 4. **Phase 3**: CV parser + skill gap analysis + bullet rewriter + optimizer UI
 5. **Phase 4**: Application tracker (CRUD, kanban board, stats, auth UI)
 
 Within each phase, backend first, then frontend.
+
+## Progress Log
+
+### Phase 0 — Scaffolding & Security Foundation (complete)
+Built and verified the full security baseline. Code-only steps done; steps needing
+a live Supabase project are flagged below as pending manual setup.
+
+- **Backend** (`backend/`):
+  - `core/config.py` — `pydantic-settings` loader; secrets are `SecretStr` (opaque in logs); `VITE_` vars ignored; `cors_origins` parsed from comma-separated `ALLOWED_ORIGINS`
+  - `core/security.py` — length-bounded sanitization, prompt-injection detection (logs, never blocks), `<user_content>` fencing that neutralizes delimiter-forgery, 3-way PDF validation (ext + MIME + magic bytes + 5MB)
+  - `core/rate_limiter.py` — slowapi limiter, per-user-or-IP keying, friendly 429 + `Retry-After`
+  - `core/supabase_client.py` — service-role admin client, server-side only
+  - `core/auth.py` — JWT verified via Supabase `/auth/v1/user` (no JWT-secret management); stashes `user_id` for per-user rate limits
+  - `api/dependencies.py` (`verify_admin_key`, constant-time compare), `api/middleware.py` (security headers + early 413 body cap), `api/routes/health.py`, `models/schemas.py`
+  - `main.py` — CORS (never `*`), middleware wiring, exception handlers returning safe envelopes (no stack traces), `GET /api/health`
+  - `requirements.txt` (pinned, targets Docker `python:3.11-slim`), non-root `Dockerfile`, `.dockerignore`
+- **Frontend** (`frontend/`): anon-key-only `services/supabase.js`, `context/AuthContext.jsx` + `hooks/useAuth.js`, token-attaching `services/api.js`, Vite (reads `VITE_` vars from root `.env` via `envDir`), Tailwind (dark default), Phase-0 `App.jsx` shell (health ping + auth state), non-root `Dockerfile`
+- **Infra**: `supabase/migrations/001_create_applications.sql` (RLS policies + `updated_at` trigger), `docker-compose.yml` (secrets only via `.env`), `Makefile`
+- **Verified** via TestClient: health 200; security headers present; CORS allows only configured origin; oversized body → 413; unknown route → safe 404 envelope; `SecretStr` opaque; injection flagged; PDF magic-byte rejection; delimiter neutralization.
+
+**Still pending (manual, requires external accounts):**
+- Create the Supabase project, run `001_create_applications.sql`, fill real values into `.env`
+- `frontend/package-lock.json` not yet generated (no `npm install` run); Dockerfile falls back to `npm install` if absent
+- Local backend run needs Python 3.11–3.13 or Docker — the dev machine's Python 3.14 cannot build the pinned `pydantic==2.10.4` (PyO3 caps at 3.13)
 
 ## Common Pitfalls to Avoid
 - Do not try to build a scraper. Use seed data. Scraping adds complexity and legal risk
